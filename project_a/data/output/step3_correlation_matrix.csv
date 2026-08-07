@@ -1,0 +1,6 @@
+,rental_price_per_day,mileage,log_mileage,engine_power,config_score
+rental_price_per_day,1.0,-0.399,-0.399,0.637,0.536
+mileage,-0.399,1.0,1.0,-0.021,0.041
+log_mileage,-0.399,1.0,1.0,-0.021,0.041
+engine_power,0.637,-0.021,-0.021,1.0,0.529
+config_score,0.536,0.041,0.041,0.529,1.0

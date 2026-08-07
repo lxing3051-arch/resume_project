@@ -1,0 +1,5 @@
+fuel,count,avg_rent,median_rent,std_rent
+hybrid_petrol,8,184.75,157.5,62.09
+electro,3,145.0,145.0,1.0
+diesel,4639,121.52,120.0,32.55
+petrol,191,110.07,109.0,47.8

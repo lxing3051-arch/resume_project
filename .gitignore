@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 原始公开数据集：体积大，由 load_public_data.py 按 config.py 中的来源重新下载
+project_a/data/raw/
+
+# SQLite 库：由 load_public_data.py 重建
+*.db
+
+# 行级中间结果：体积大，可由各 step 脚本重新生成
+# 汇总表与图表仍然入库，便于直接查看结论
+project_a/data/output/step2_vehicle_monthly_tco.csv
+project_a/data/output/step4_test_predictions.csv
+project_b/data/output/b_step1_asset_rfm_features.csv
+project_b/data/output/b_step2_asset_segments.csv
+project_b/data/output/b_step3_risk_scored_vehicles.csv

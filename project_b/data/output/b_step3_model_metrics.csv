@@ -1,0 +1,7 @@
+feature_set,model,AUC,Accuracy,Precision,Recall,F1
+RFM_plus_trend,RandomForest,0.65,0.61,0.606,0.579,0.592
+RFM_only,GradientBoosting,0.65,0.613,0.607,0.593,0.6
+RFM_plus_trend,GradientBoosting,0.649,0.609,0.604,0.589,0.596
+RFM_only,RandomForest,0.646,0.609,0.603,0.592,0.598
+RFM_only,Logistic,0.642,0.609,0.615,0.538,0.574
+RFM_plus_trend,Logistic,0.641,0.612,0.608,0.585,0.596

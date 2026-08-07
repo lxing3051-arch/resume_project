@@ -1,0 +1,18 @@
+{
+  "MAPE_pct": {
+    "Baseline": 27.86,
+    "Ridge": 18.36
+  },
+  "RMSE": {
+    "Baseline": 31.32,
+    "Ridge": 19.81
+  },
+  "MAE": {
+    "Baseline": 22.11,
+    "Ridge": 13.78
+  },
+  "R2": {
+    "Baseline": 0.104,
+    "Ridge": 0.641
+  }
+}

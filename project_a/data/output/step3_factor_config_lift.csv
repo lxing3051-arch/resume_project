@@ -1,0 +1,15 @@
+feature,value,count,median_rent,lift_vs_overall
+automatic_car,yes,961,143.0,24.0
+has_air_conditioning,yes,978,132.0,13.0
+has_getaround_connect,yes,2230,130.0,11.0
+has_speed_regulator,yes,1169,130.0,11.0
+private_parking_available,yes,2661,126.0,7.0
+has_gps,yes,3838,122.0,3.0
+winter_tires,no,328,122.0,3.0
+winter_tires,yes,4513,119.0,0.0
+has_air_conditioning,no,3863,116.0,-3.0
+has_speed_regulator,no,3672,116.0,-3.0
+automatic_car,no,3880,114.0,-5.0
+private_parking_available,no,2180,112.0,-7.0
+has_getaround_connect,no,2611,110.0,-9.0
+has_gps,no,1003,103.0,-16.0
