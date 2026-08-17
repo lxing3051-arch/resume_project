@@ -1,59 +1,36 @@
-# Step 3：定价因子分析（实操指南）
+# 租金定价因子分析
 
-## 一、Step 3 要回答的业务问题
+## 分析目标
 
-1. **日租金受哪些因素影响？**（车型、里程、功率、配置…）  
-2. **各因子与租金的相关方向与强度？**  
-3. **哪些因子应进入 Step 4 回归模型？**  
+量化车辆连续变量、类别属性和配置项与日租金之间的关系，为规则定价和回归模型提供特征依据。
 
-数据：**Getaround 定价清单**（4843 条真实 `rental_price_per_day`）
+## 分析方法
 
----
+- 连续变量：计算 Pearson 相关系数并检查变量分布。
+- 里程：使用 `log1p` 处理长尾后比较租金关系。
+- 类别变量：按车型、燃料和里程区间汇总样本量、中位数与均值。
+- 配置项：比较有无配置车辆的租金中位数差异和相对提升。
 
-## 二、运行
+相关性用于描述线性关联，不解释为因果效应。类别对比同时报告样本量，避免将小样本差异视为稳定结论。
+
+## 运行
 
 ```bash
-cd project_a
-python src/step3_pricing_factors.py
+python project_a/src/step3_pricing_factors.py
 ```
 
----
-
-## 三、分析步骤
-
-| 步骤 | 内容 |
-|------|------|
-| 3.1 清洗 | 去掉负里程、极端租金（>500 USD/天） |
-| 3.2 特征 | `log_mileage`、里程四分位 `mileage_bin`、`config_score`（配置项求和） |
-| 3.3 相关 | Spearman 相关（对非线性更稳健） |
-| 3.4 分组 | 按 `car_type` / `fuel` / 里程段 看中位租金 |
-| 3.5 配置溢价 | 有 GPS、自动挡等 vs 无，租金 lift |
-| 3.6 出图 | 相关热力图 + 车型/里程柱状图 |
-
----
-
-## 四、输出文件
+## 输出
 
 | 文件 | 内容 |
-|------|------|
-| `step3_correlation_matrix.csv` | 数值因子相关矩阵 |
-| `step3_factor_car_type.csv` | 分车型租金 |
-| `step3_factor_fuel.csv` | 分燃料租金 |
-| `step3_factor_mileage_bin.csv` | 分里程段租金 |
-| `step3_factor_config_lift.csv` | 配置项溢价 |
-| `step3_correlation_heatmap.png` | 相关热力图 |
-| `step3_categorical_factors.png` | 车型 + 里程因子图 |
+|---|---|
+| `step3_correlation_matrix.csv` | 数值变量相关矩阵 |
+| `step3_factor_car_type.csv` | 车型租金分布 |
+| `step3_factor_fuel.csv` | 燃料类型租金分布 |
+| `step3_factor_mileage_bin.csv` | 里程区间租金分布 |
+| `step3_factor_config_lift.csv` | 配置项租金差异 |
+| `step3_correlation_heatmap.png` | 相关性热力图 |
+| `step3_categorical_factors.png` | 类别因子对比图 |
 
----
+## 应用边界
 
-## 五、Step 4 衔接
-
-将以下因子作为回归候选特征：
-
-- 分类：`car_type`、`fuel`（one-hot）  
-- 数值：`engine_power`、`log_mileage`  
-- 配置：`has_gps`、`automatic_car` 等 dummy  
-
----
-
-*下一步：Step 4 回归定价模型 + 与 baseline 对比*
+公开数据缺少地区供需、节假日、库存和竞品动态价格，因子分析仅覆盖车辆侧结构性差异。进入定价模型的字段需在训练集内完成预处理，避免测试集信息进入拟合过程。

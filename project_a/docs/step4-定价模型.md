@@ -1,51 +1,34 @@
-# Step 4：回归定价模型（实操指南）
+# 日租金回归模型
 
-## 一、Step 4 要回答的业务问题
+## 模型目标
 
-1. **能否用因子预测日租金？**  
-2. **比「按车型取中位数」的规则定价好多少？**  
-3. **哪些因子对定价贡献最大？**  
+在车型中位数规则价基础上，评估车辆属性是否能降低样本外日租金预测误差。
 
----
+## 设计
 
-## 二、运行
+| 组件 | 设置 | 业务含义 |
+|---|---|---|
+| Baseline | 训练集内同车型租金中位数 | 可执行的规则定价基准 |
+| 模型 | Ridge 回归 | 控制相关特征的系数波动并保留可解释性 |
+| 特征 | 车型、燃料、动力、对数里程、配置项 | 覆盖车辆定位、损耗和配置差异 |
+| 切分 | 固定随机种子的 80/20 hold-out | 保持模型对比可复现 |
+| 指标 | MAPE、RMSE、MAE、R² | 同时衡量相对误差、绝对误差和解释度 |
+
+## 运行
 
 ```bash
-cd project_a
-python src/step4_pricing_model.py
+python project_a/src/step4_pricing_model.py
 ```
 
----
-
-## 三、建模设计
-
-| 组件 | 选择 | 原因 |
-|------|------|------|
-| **Baseline** | 同 `car_type` 训练集租金中位数 | 业务常有的规则定价 |
-| **模型** | Ridge 回归 | 可解释、不易过拟合，对齐 JD「回归分析」 |
-| **特征** | Step 3 结论：`car_type`, `fuel`, `engine_power`, `log_mileage`, 配置 dummy | 因子分析驱动 |
-| **评估** | MAPE / RMSE / MAE / R² | 面试常问 |
-| **切分** | 80% 训练 / 20% 测试 | 标准 hold-out |
-
----
-
-## 四、输出文件
+## 输出
 
 | 文件 | 内容 |
-|------|------|
-| `step4_model_metrics.csv` | Baseline vs Ridge 指标 |
-| `step4_feature_importance.csv` | Ridge 系数（因子重要性） |
-| `step4_test_predictions.csv` | 测试集预测 vs 真实 |
-| `step4_model_comparison.png` | MAPE 对比 + 散点图 |
+|---|---|
+| `step4_model_metrics.csv` | Baseline 与 Ridge 测试集指标 |
+| `step4_feature_importance.csv` | 标准化处理后的 Ridge 系数 |
+| `step4_test_predictions.csv` | 测试集真实值与预测值 |
+| `step4_model_comparison.png` | 误差和拟合效果对比 |
 
----
+## 应用边界
 
-## 五、简历填数
-
-跑完后从 `step4_model_metrics.csv` 取：
-
-> 基于 engine_power、log_mileage、car_type 等 8+ 因子构建 Ridge 动态定价模型，较 car_type 规则定价 **MAPE 降低 X%**，R² 达 **X.XX**。
-
----
-
-*下一步：Step 5 结论与运营建议汇总*
+模型输出适合作为价格参考和异常检查，不包含实时供需、节假日、库存、竞争对手价格等动态信号。生产定价需加入价格上下限、人工审核和持续误差监控。

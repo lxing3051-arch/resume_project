@@ -1,7 +1,4 @@
-"""
-Step 5：汇总结论、运营建议与面试材料
-读取 Step 2/3/4 输出，生成 executive summary Markdown
-"""
+"""汇总项目 A 的分析结果并生成管理摘要。"""
 
 from __future__ import annotations
 
@@ -15,137 +12,85 @@ DOCS_DIR = ROOT / "docs"
 
 
 def load_csv(name: str) -> pd.DataFrame:
+    """读取分析阶段产出的汇总表。"""
     return pd.read_csv(OUTPUT_DIR / name)
 
 
 def build_report() -> str:
+    """根据最新计算结果生成面向经营决策的 Markdown 摘要。"""
     seg = load_csv("step2_segment_profitability.csv")
     city = load_csv("step2_city_profitability.csv")
     metrics = load_csv("step4_model_metrics.csv")
-    car_type = load_csv("step3_factor_car_type.csv")
 
     best_seg = seg.loc[seg["avg_est_profit"].idxmax()]
     worst_seg = seg.loc[seg["avg_est_profit"].idxmin()]
     best_city = city.loc[city["avg_est_profit"].idxmax()]
     worst_city = city.loc[city["avg_est_profit"].idxmin()]
-    base = metrics[metrics["model"] == "Baseline"].iloc[0]
-    ridge = metrics[metrics["model"] == "Ridge"].iloc[0]
-    mape_improve = round(base["MAPE_pct"] - ridge["MAPE_pct"], 2)
-    mape_improve_pct = round(mape_improve / base["MAPE_pct"] * 100, 1)
+    baseline = metrics.loc[metrics["model"] == "Baseline"].iloc[0]
+    ridge = metrics.loc[metrics["model"] == "Ridge"].iloc[0]
+    mape_drop = baseline["MAPE_pct"] - ridge["MAPE_pct"]
+    relative_drop = mape_drop / baseline["MAPE_pct"]
 
-    return f"""# 项目 A · 结论与运营建议（Step 5）
+    segment_rows = "\n".join(
+        f"| {row['segment']} | {row['vehicle_cnt']:,.0f} | "
+        f"{row['avg_total_cost']:,.2f} | {row['avg_est_profit']:,.2f} | "
+        f"{row['profit_margin']:.1%} |"
+        for _, row in seg.sort_values("avg_est_profit", ascending=False).iterrows()
+    )
 
-> 自动生成于 Step 2/3/4 输出汇总 | 地上铁商业分析（资产运营方向）
+    return f"""# 车辆资产收益与定价分析：管理摘要
 
----
+## 执行摘要
 
-## 一、30 秒项目介绍（面试开场）
+公开维保与租金数据被整合为车辆资产、月度成本和定价分析层。情景测算显示，
+Segment **{best_seg['segment']}** 的平均利润率最高（{best_seg['profit_margin']:.1%}），
+Segment **{worst_seg['segment']}** 的平均月利润最低（{worst_seg['avg_est_profit']:,.2f} USD）。
+Ridge 定价模型的测试集 MAPE 为 **{ridge['MAPE_pct']:.2f}%**，较车型中位数基线
+下降 **{mape_drop:.2f} 个百分点**（相对下降 {relative_drop:.1%}）。
 
-> 基于 Zenodo 国际租车维保公开数据（3 万辆、24 万+ 发票）与 Getaround 定价数据，搭建租赁资产 **TCO 测算 → 盈利复盘 → 动态定价** 分析框架。完成分 Segment/分城市成本复盘，识别 Segment E 估算亏损；构建 Ridge 定价模型，较 car_type 规则定价 **MAPE 降低 {mape_improve_pct}%**（{base['MAPE_pct']}%→{ridge['MAPE_pct']}%），R²={ridge['R2']}。
+## 资产盈利能力
 
----
+| Segment | 车辆数 | 平均月度 TCO | 平均情景月利润 | 利润率 |
+|---|---:|---:|---:|---:|
+{segment_rows}
 
-## 二、核心发现
+- 盈利表现最佳城市：City {int(best_city['city_id'])}，平均情景月利润 {best_city['avg_est_profit']:,.2f} USD。
+- 盈利表现最弱城市：City {int(worst_city['city_id'])}，平均情景月利润 {worst_city['avg_est_profit']:,.2f} USD。
+- 维保费用采用 P99 封顶值参与经营口径计算，原始金额仍保留用于异常审计。
 
-### 2.1 资产成本与盈利（Step 2）
+## 定价模型表现
 
-| Segment | 月均 TCO (USD) | 估算月利润 | 利润率 |
-|---------|----------------|------------|--------|
-| C | {best_seg['avg_total_cost']} | **+{best_seg['avg_est_profit']}** | {best_seg['profit_margin']:.1%} |
-| B | {seg[seg['segment']=='B']['avg_total_cost'].values[0]} | +{seg[seg['segment']=='B']['avg_est_profit'].values[0]} | {seg[seg['segment']=='B']['profit_margin'].values[0]:.1%} |
-| E | {worst_seg['avg_total_cost']} | **{worst_seg['avg_est_profit']}** | {worst_seg['profit_margin']:.1%} |
+| 模型 | MAPE | RMSE | MAE | R² |
+|---|---:|---:|---:|---:|
+| 车型中位数基线 | {baseline['MAPE_pct']:.2f}% | {baseline['RMSE']:.2f} | {baseline['MAE']:.2f} | {baseline['R2']:.3f} |
+| Ridge | {ridge['MAPE_pct']:.2f}% | {ridge['RMSE']:.2f} | {ridge['MAE']:.2f} | {ridge['R2']:.3f} |
 
-- **最赚 Segment**：{best_seg['segment']}（利润率 {best_seg['profit_margin']:.1%}）
-- **亏损 Segment**：{worst_seg['segment']}（估算月利润 {worst_seg['avg_est_profit']} USD）
-- **成本结构**：维保（真实发票）> 折旧 > 保险+停车
-- **城市**：City {int(best_city['city_id'])} 盈利最好（+{best_city['avg_est_profit']:.0f}），City {int(worst_city['city_id'])} 最差（{worst_city['avg_est_profit']:.0f}）
+模型结果支持在车型规则价基础上加入动力、里程和配置差异，但不替代供需、库存、
+节假日和竞争环境等实时定价信号。
 
-### 2.2 定价因子（Step 3）
+## 建议动作
 
-- **engine_power** 与租金正相关最强（+0.64）
-- **log_mileage** 负相关（−0.40）：里程越高租金越低
-- **car_type**：coupe/suv 中位租金最高（151/133 USD/天），subcompact 最低（96）
+1. 对 Segment {worst_seg['segment']} 建立单车成本审计清单，区分事故型大额维保与持续性高成本。
+2. 对 City {int(worst_city['city_id'])} 复核停车层级、车型结构和调度效率，再决定调拨或压缩规模。
+3. 以 Ridge 输出作为定价参考区间，保留人工规则和价格上下限，并持续监控 MAPE 与残差分布。
+4. 将利用率、真实出租天数和订单收入接入后，替换当前 Segment 收入基准，形成可核算的单车损益。
 
-### 2.3 定价模型（Step 4）
+## 口径与限制
 
-| 模型 | MAPE | RMSE | R² |
-|------|------|------|-----|
-| Baseline | {base['MAPE_pct']}% | {base['RMSE']} | {base['R2']} |
-| Ridge | **{ridge['MAPE_pct']}%** | **{ridge['RMSE']}** | **{ridge['R2']}** |
-
----
-
-## 三、三条运营建议
-
-### 建议 1：Segment E 资产提质增效
-
-**问题**：Segment E 估算月利润 {worst_seg['avg_est_profit']} USD，TCO（{worst_seg['avg_total_cost']:.0f}）高于租金覆盖能力。
-
-**动作**：
-- 审计高维保 outliers 车辆，评估退网/置换
-- 对 Segment E 上调日租金或降低投放比例
-- 优先将资源转向 Segment C（利润率 {best_seg['profit_margin']:.1%}）
-
-### 建议 2：分城市差异化运维
-
-**问题**：City {int(worst_city['city_id'])} 估算月利润 {worst_city['avg_est_profit']:.0f} USD，City {int(best_city['city_id'])} 为 +{best_city['avg_est_profit']:.0f} USD。
-
-**动作**：
-- 高成本城市：收紧维保预算、优化停车 tier
-- 高盈利城市：适度扩 fleet，复制 Segment C 车型结构
-
-### 建议 3：落地动态定价模型
-
-**问题**：规则定价（car_type 中位数）MAPE {base['MAPE_pct']}%，无法反映里程、配置差异。
-
-**动作**：
-- 上线 Ridge 模型，按 engine_power / log_mileage / 配置项调价
-- 高里程车自动降价，高配置车（GPS/自动挡）适度溢价
-- 预期 MAPE 降至 ~{ridge['MAPE_pct']}%
-
----
-
-## 四、简历描述（可直接粘贴）
-
-**新能源租赁车辆资产收益测算与动态定价分析** | Python / SQL / sklearn
-
-- 基于 Zenodo、Getaround 公开数据，搭建覆盖 3 万辆、67 城的租赁资产 TCO 测算框架（折旧/维保/保险/残值 6 类口径）
-- 完成分 Segment/分城市盈利复盘，识别 Segment E 估算亏损，Segment C 利润率 29.4%
-- 分析 engine_power、log_mileage、car_type 等定价因子，构建 Ridge 动态租金模型
-- 较 car_type 规则定价 MAPE 降低 {mape_improve_pct}%（27.9%→18.4%），测试集 R²=0.64
-
----
-
-## 五、面试高频追问
-
-| 问题 | 回答要点 |
-|------|----------|
-| 数据是真实的吗？ | 维保/租金来自公开数据集；采购价/折旧/保险为公开行业参数，已标注 |
-| 为什么只有 city_id？ | Zenodo 原始数据无城市名，用编号分析；可扩展 dim_city |
-| Step 2 收入怎么估的？ | Getaround Segment 租金中位数 × 65% 利用率 |
-| 为什么选 Ridge？ | 可解释、防过拟合，对齐 JD 回归分析要求 |
-| 模型怎么验证？ | 80/20 hold-out，对比 Baseline MAPE/RMSE |
-
----
-
-## 六、局限与改进
-
-1. 两数据集无法车级关联 → 后续有内部数据可统一 ID
-2. 国内 NEV 场景 → 框架可迁移，换 NDANEV 数据源
-3. Step 4 可试 XGBoost / 分城市分模型 → 作 sensitivity
-
----
-
-*项目 A 五步完成。*
+- Zenodo 与 Getaround 无共同车辆标识，只在 Segment 层进行租金基准桥接。
+- 采购价、折旧、保险、停车与利用率为配置参数，盈利结果属于情景测算。
+- 数据来源跨市场且币种口径有限，结果适用于方法验证和优先级识别，不作为财务确认依据。
 """
 
 
 def main() -> None:
     report = build_report()
-    out_md = DOCS_DIR / "step5-结论与运营建议.md"
-    out_md.write_text(report, encoding="utf-8")
-    (OUTPUT_DIR / "step5_executive_summary.md").write_text(report, encoding="utf-8")
-    print(f"报告已生成:\n  {out_md}\n  {OUTPUT_DIR / 'step5_executive_summary.md'}")
+    DOCS_DIR.mkdir(parents=True, exist_ok=True)
+    doc_path = DOCS_DIR / "step5-结论与运营建议.md"
+    output_path = OUTPUT_DIR / "step5_executive_summary.md"
+    doc_path.write_text(report, encoding="utf-8")
+    output_path.write_text(report, encoding="utf-8")
+    print(f"报告已生成:\n  {doc_path}\n  {output_path}")
 
 
 if __name__ == "__main__":
